@@ -1,0 +1,109 @@
+var token = "<your Telegram bot token>";
+var url = "https://api.telegram.org/bot" + token;
+var firstId = "<first id>", secondId = "<second id>";
+var ssId = "<your sheet>";
+var firstSheet = "First", secondSheet = "Second";
+var webAppUrl = "<your url>";
+
+
+function getMe() {
+  var response = UrlFetchApp.fetch(url + "/getMe");
+  Logger.log(response.getContentText());
+}
+
+function setWebhook() {
+  var response = UrlFetchApp.fetch(url + "/setWebhook?url=" + webAppUrl);
+  Logger.log(response.getContentText());
+}
+
+function doGet(e) {
+  return HtmlService.createHtmlOutput("Hi " + JSON.stringify(e));
+}
+
+function sendText(id,text) {
+  var response = UrlFetchApp.fetch(url + "/sendMessage?chat_id=" + id + "&text=" + text);
+  Logger.log(response.getContentText());
+}
+
+function remind(id,pay1,pay2) {
+  var ss = SpreadsheetApp.openById(ssId);
+  var sheet = ss.getSheetByName("Statistics");
+  var duo = sheet.getRange(16, 5).getValue() + pay1 + pay2;
+  var one;
+  if(id == firstId)
+    one = sheet.getRange(16, 3).getValue() + pay1;
+  else if(id == secondId)
+    one = sheet.getRange(16, 4).getValue() + pay1;
+  sendText(id,"當月目前個人支出為 " + one + " ，兩人總支出為 " + duo + " !");
+}
+
+function doPost(e) {
+  var contents = JSON.parse(e.postData.contents);
+  var text = contents.message.text;
+  var id = contents.message.from.id;
+  var name = contents.message.from.username;
+  var ss = SpreadsheetApp.openById(ssId);
+  arr = text.split(" ");
+  var command = arr[0], kind = arr[1], item = arr[2];
+  var firstShould = parseInt(arr[3]), secondShould = parseInt(arr[4]), firstPay = parseInt(arr[5]), secondPay = parseInt(arr[6]);
+  
+  if(!(id==firstId||id==secondId))
+    sendText(id, "請不要亂用別人的Bot!");
+  
+  else if(command == "/start")
+    sendText(id, "Hi "+ name + "!");
+  
+  else if(command == "/help") {
+    sendText(id, "輸入格式1：指令 類別 項目 <第一個人>應付 <第二個人>應付 <第一個人>支付 <第二個人>支付");
+    sendText(id, "範例輸入1：/together 交通 火車票 51 51 0 102");
+    sendText(id, "輸入格式2：指令 類別 項目 個人應付");
+    sendText(id, "範例輸入2：/separate 餐飲 午餐 80");
+  }
+  
+  else if(command == "/together" && (firstShould + secondShould) == (firstPay + secondPay) && firstShould>=0 && secondShould>=0 && firstPay>=0 && secondPay>=0) {
+    var sheet = ss.getSheetByName("Together");
+    var row = 2;
+    while(1) {
+      var temp = "A" + row + ":" + "G" + row;
+      var range = sheet.getRange(temp);
+      if(range.isBlank()) {
+        range.setValues([[new Date(),arr[1],arr[2],firstShould,secondShould,firstPay,secondPay]]);
+        break;
+      }
+      else
+        row++;
+    }
+    sendText(id,"成功新增共同支出!");
+    if(id==firstId)
+      remind(id,firstShould,secondShould);
+    else if(id==secondId)
+      remind(id,secondShould,firstShould);
+  }
+  
+  else if(command == "/separate" && firstShould>=0) {
+    var sheet;
+    var pay = firstShould;
+    if(id==firstId) {
+      sheet = ss.getSheetByName(firstSheet);
+    }
+    else if(id==secondId) {
+      sheet = ss.getSheetByName(secondSheet);
+    }
+    sheet.appendRow([new Date(),arr[1],arr[2],pay]);
+    sendText(id,"成功新增個人支出!");
+    remind(id,pay,0);
+  }
+  
+  else 
+    sendText(id, "輸入錯誤!");
+}
+
+function everyday() {
+  sendText(firstId,"要記得記帳哦!");
+  sendText(secondId,"要記得記帳哦!");  
+}
+
+function everymonth() {
+  sendText(firstId,"請在今天23.前完成本月記帳，表單要更新到下個月摟!");
+  sendText(secondId,"請在今天23.前完成本月記帳，表單要更新到下個月摟!");
+}
