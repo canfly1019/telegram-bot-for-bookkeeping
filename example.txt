@@ -1,4 +1,4 @@
-var token = "<your Telegram bot token>";
+﻿var token = "<your Telegram bot token>";
 var url = "https://api.telegram.org/bot" + token;
 var firstId = "<first id>", secondId = "<second id>";
 var ssId = "<your sheet>";
@@ -54,7 +54,7 @@ function doPost(e) {
     sendText(id, "Hi "+ name + "!");
   
   else if(command == "/help") {
-    sendText(id, "輸入格式1：指令 類別 項目 <第一個人>應付 <第二個人>應付 <第一個人>支付 <第二個人>支付");
+    sendText(id, "輸入格式1：指令 類別 項目 第一個人應付 第二個人應付 第一個人支付 第二個人支付");
     sendText(id, "範例輸入1：/together 交通 火車票 51 51 0 102");
     sendText(id, "輸入格式2：指令 類別 項目 個人應付");
     sendText(id, "範例輸入2：/separate 餐飲 午餐 80");
